@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Meu Blog</h1>
+</div>
+
+<div class="alert alert-info show" id="connection-status"></div>
+
+<div class="blog-list card-columns" id="blog-list"></div>
+
+<div class="center">
+    <button class="btn btn-primary" onclick="pageEvents.loadMoreBlogPosts();">ver mais</button>
+    <br /><br />
+</div>
+
+<div id="blog-item-container"></div>
+
+<script id="blog-card" type="text/template">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title"> {{PostId}} - {{Title}}</h5>
+            <p class="card-text">{{ShortDescription}}</p>
+            <button class="btn btn-primary" onclick="pageEvents.loadBlogPost('{{Link}}');">ir</button>
+        </div>
+    </div>
+</script>
+
+<script id="blog-item" type="text/template">
+    <div id="{{Link}}" class="blog-item">
+        {{Content}}
+    </div>
+    <a href="#blog-title" class="btn btn-primary blog-item-close">voltar</a>
+</script>
+
+<script id="blog-content-not-found" type="text/template">
+    <h1>
+        Ups, artigo não está no Cache!
+    </h1>
+    <div>
+        Você quer que a gente continue tentando fazer download do 
+        artigo
+        em plano de fundo e te avise quando estiver disponível?
+    </div>
+    <br />
+    <button class="btn btn-primary download-start" onclick="pageEvents.setBackgroundFetch('{{Link}}');">Sim!</button>
+    <br />
+    <br />
+    <div id="status-download" style="display:none;">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="text-success">
+            <p>pronto!</p>
+            <button class="btn btn-success" onclick="pageEvents.loadBlogPost('{{Link}}');">ler!</button>
+        </div>
+    </div>
+</script>
