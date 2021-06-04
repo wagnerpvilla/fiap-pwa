@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MeuBlog.Models;
 using MeuBlog.Services;
+using MeuBlog.Data;
+using Lib.Net.Http.WebPush;
+using System.Net;
 
 namespace MeuBlog.Controllers
 {
@@ -14,11 +17,23 @@ namespace MeuBlog.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IBlogService service;
+        private readonly IPushSubscriptionStore subscriptionStore;
+        private readonly PushServiceClient pushClient;
+        private readonly IPushSubscriptionStoreAccessorProvider subscriptionStoreAccessorProvider;
 
-        public HomeController(ILogger<HomeController> logger, IBlogService service)
+        public HomeController(
+            ILogger<HomeController> logger,
+            IBlogService service,
+            IPushSubscriptionStore subscriptionStore,
+            PushServiceClient pushClient, 
+            IPushSubscriptionStoreAccessorProvider subscriptionStoreAccessorProvider
+        )
         {
             _logger = logger;
             this.service = service;
+            this.subscriptionStore = subscriptionStore;
+            this.pushClient = pushClient;
+            this.subscriptionStoreAccessorProvider = subscriptionStoreAccessorProvider;
         }
 
         public IActionResult Index()
@@ -58,5 +73,70 @@ namespace MeuBlog.Controllers
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
         }
+
+        [HttpGet("publickey")]
+        public ContentResult GetPublicKey()
+        {
+            return Content(pushClient.DefaultAuthentication.PublicKey, "text/plain");
+        }
+
+
+        [HttpPost("subscriptions")]
+        public async Task<IActionResult> StoreSubscription([FromBody] PushSubscription subscription)
+        {
+            int res = await subscriptionStore.StoreSubscriptionAsync(subscription);
+            if (res > 0)
+            {
+                return CreatedAtAction(nameof(StoreSubscription), subscription);
+            }
+            return NoContent();
+        }
+
+        [HttpPost("notifications")]
+        public async Task<IActionResult> SendNotification([FromBody] PushMessageViewModel messageVM)
+        {
+            var message = new PushMessage(messageVM.Notification)
+            {
+                Topic = messageVM.Topic,
+                Urgency = messageVM.Urgency
+            };
+
+            await subscriptionStore.ForEachSubscriptionAsync(async (PushSubscription subscription) =>
+            {
+                try
+                {
+                    await pushClient.RequestPushMessageDeliveryAsync(subscription, message);
+                }
+                catch (Exception ex)
+
+
+                {
+                    await HandlePushMessageDeliveryException(ex, subscription);
+                }
+            });
+
+            return NoContent();
+        }
+
+        private async Task HandlePushMessageDeliveryException(Exception exception, PushSubscription subscription)
+        {
+            var pushServiceClientException = exception as PushServiceClientException;
+            if (pushServiceClientException is null)
+            {
+                _logger?.LogError(exception, "Failed requesting push message delivery to { 0}.", subscription.Endpoint);
+            }
+            else
+            {
+                if (pushServiceClientException.StatusCode == HttpStatusCode.NotFound || pushServiceClientException.StatusCode == HttpStatusCode.Gone)
+                {
+                    using (var subscriptionStoreAccessor = subscriptionStoreAccessorProvider.GetPushSubscriptionStoreAccessor())
+{
+                        await subscriptionStoreAccessor.PushSubscriptionStore.DiscardSubscriptionAsync(subscription.Endpoint);
+                    }
+                    _logger?.LogInformation("Subscription has expired or is no longer valid and has been removed.");
+                }
+            }
+        }
+
     }
 }

@@ -67,6 +67,9 @@ window.pageEvents = {
       });
     });
   },
+  requestPushPermission: function () {
+    serviceWorker.requestPushPermission();
+  },
 };
 
 window.addEventListener("beforeinstallprompt", (e) => {
