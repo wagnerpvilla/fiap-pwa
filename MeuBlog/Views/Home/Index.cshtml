@@ -17,6 +17,47 @@
 
 <div id="blog-item-container"></div>
 
+<div>
+    Camera: <input type="file" accept="image/*" capture="camera" />
+    <br /><br />
+</div>
+<div>
+    Gravação: <input type="file" accept="video/*" capture="camcorder">
+    <br /><br />
+</div>
+<div>
+    Microfone: <input type="file" accept="audio/*" capture="microphone">
+    <br /><br />
+</div>
+
+<div>
+    <button onclick="pageEvents.getGeolocation();" type="button" class="btn btn-primary" id="address-button">
+        Clique aqui para obter seu Endereço
+    </button>
+    <br /><br />
+</div>
+<div>
+    <div id="address-found-input" style="display:none;">
+        Cidade/Estado: <input id="address-found" type="text" />
+    </div>
+    <br /><br />
+</div>
+
+<div>
+    <button type="button" id="vibrar-celular" onclick="pageEvents.vibrate();" class="btn btn-primary">
+        Vibrar o Celular
+    </button>
+    <br /> <br />
+</div>
+
+<div>
+    <canvas id="canvas" width="200" height="200" style="border: 1px solid black;">
+    </canvas>
+    <div id="rotation-info"></div>
+    <br /><br />
+</div>
+
+
 <script id="blog-card" type="text/template">
     <div class="card">
         <div class="card-body">
@@ -39,7 +80,7 @@
         Ups, artigo não está no Cache!
     </h1>
     <div>
-        Você quer que a gente continue tentando fazer download do 
+        Você quer que a gente continue tentando fazer download do
         artigo
         em plano de fundo e te avise quando estiver disponível?
     </div>
